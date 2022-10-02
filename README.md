@@ -37,7 +37,7 @@ Please check the main repositoy for further informations:
 
 ## Related repositories:
 * [clojure kernel](https://github.com/twosigma/beakerx_kernel_clojure)
-* [groovy kernel](https://github.com/twosigma/beakerx_kernel_groovy)
+* [groovy kernel](https://github.com/ssadedin/beakerx_kernel_groovy)
 * [java kernel](https://github.com/twosigma/beakerx_kernel_java)
 * [kotlin kernel](https://github.com/twosigma/beakerx_kernel_kotlin)
 * [scala kernel](https://github.com/twosigma/beakerx_kernel_scala)
