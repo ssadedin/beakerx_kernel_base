@@ -15,17 +15,19 @@
  */
 package com.twosigma.beakerx.handler;
 
+import static com.twosigma.beakerx.handler.KernelHandlerWrapper.wrapBusyIdle;
+import static com.twosigma.beakerx.kernel.msg.JupyterMessages.COMPLETE_REPLY;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.twosigma.beakerx.autocomplete.AutocompleteResult;
 import com.twosigma.beakerx.kernel.KernelFunctionality;
 import com.twosigma.beakerx.message.Header;
 import com.twosigma.beakerx.message.Message;
-
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-
-import static com.twosigma.beakerx.kernel.msg.JupyterMessages.COMPLETE_REPLY;
-import static com.twosigma.beakerx.handler.KernelHandlerWrapper.wrapBusyIdle;
 
 public class CompleteHandler extends KernelHandler<Message> {
 
@@ -61,11 +63,30 @@ public class CompleteHandler extends KernelHandler<Message> {
     reply.setIdentities(message.getIdentities());
     reply.setParentHeader(message.getHeader());
     Map<String, Serializable> content = new HashMap<>();
+    List<String> matches = autocomplete.getMatches();
+    
     content.put(STATUS, "ok");
-    content.put(MATCHES, autocomplete.getMatches().toArray());
+    content.put(MATCHES, matches.toArray());
     content.put(CURSOR_END, cursorPos);
     content.put(CURSOR_START, autocomplete.getStartIndex());
+    
+    List<String> typeInfos = autocomplete.getTypeInfos();
+    if(typeInfos != null) {
+      var metadata = new HashMap<String,Object>();
+      var types = new ArrayList<Map<String,String>>();
+      
+      for (int i = 0; i < matches.size(); i++) {
+        String match = matches.get(i);
+        String matchTypeInfo = typeInfos.get(i);
+        var typeInfo = new HashMap<String,String>();
+        typeInfo.put("text", match);
+        typeInfo.put("type", matchTypeInfo);
+        typeInfo.put("label", autocomplete.getMatchInfos().get(i).label);
+        types.add(typeInfo);
+      }
 
+      metadata.put("_jupyter_types_experimental", types);
+      content.put("metadata", metadata);
     reply.setContent(content);
     return reply;
   }
