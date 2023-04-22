@@ -74,7 +74,7 @@ public class CodeFactory {
     result.add(line);
     Pattern p = Pattern.compile("\\s*%.*");
     while (scanner.hasNext() && !scanner.hasNext(p)) {
-      String str = scanner.nextLine().trim();
+      String str = scanner.nextLine();
       result.add(str);
     }
     return new PlainCode(String.join(System.lineSeparator(), result), evaluationObjectFactory);
