@@ -17,6 +17,7 @@
 package com.twosigma.beakerx.inspect;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
@@ -26,26 +27,35 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 
 public class SerializeInspect {
-    private Gson gson = new Gson();
-    public String toJson(HashMap<String, ClassInspect> object){
-        Type type = new TypeToken<HashMap<String, ClassInspect>>(){}.getType();
-        return gson.toJson(object, type);
-    }
-    public void saveToFile(String json){
-        try {
-            File file = new File("beakerx_inspect.json");
-            FileWriter fileWriter = new FileWriter(file);
-            fileWriter.write(json);
-            fileWriter.flush();
-            fileWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+  
+//  private Gson gson = new Gson();
 
-    public HashMap<String, ClassInspect> fromJson(String json){
-        Type type = new TypeToken<HashMap<String, ClassInspect>>(){}.getType();
-        return gson.fromJson(json, type);
+  private Gson gson = new GsonBuilder()
+      .registerTypeAdapter(MethodInspect.class, new MethodInspect.MethodInspectDeserializer())
+      .create();
+
+  public String toJson(HashMap<String, ClassInspect> object) {
+    Type type = new TypeToken<HashMap<String, ClassInspect>>() {
+    }.getType();
+    return gson.toJson(object, type);
+  }
+
+  public void saveToFile(String json) {
+    try {
+      File file = new File("beakerx_inspect.json");
+      FileWriter fileWriter = new FileWriter(file);
+      fileWriter.write(json);
+      fileWriter.flush();
+      fileWriter.close();
+    } catch (IOException e) {
+      e.printStackTrace();
     }
+  }
+
+  public HashMap<String, ClassInspect> fromJson(String json) {
+    Type type = new TypeToken<HashMap<String, ClassInspect>>() {
+    }.getType();
+    return gson.fromJson(json, type);
+  }
 
 }

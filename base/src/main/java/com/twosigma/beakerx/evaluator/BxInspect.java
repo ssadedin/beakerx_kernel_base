@@ -24,6 +24,8 @@ import com.twosigma.beakerx.inspect.SerializeInspect;
 import com.twosigma.beakerx.kernel.Imports;
 import org.apache.commons.io.IOUtils;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.JarURLConnection;
@@ -34,6 +36,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class BxInspect implements Inspect {
@@ -43,6 +47,7 @@ public class BxInspect implements Inspect {
   public static final String BEAKERX_INSPECT_JSON = "beakerx_inspect.json";
 
   private String inspectData;
+  private HashMap<String, ClassInspect> inspectDataCache;
   private InputStream inspectDataStream;
 
   public BxInspect(InputStream inspectDataStream) {
@@ -60,20 +65,25 @@ public class BxInspect implements Inspect {
     return inspectResult;
   }
 
-  private String getInspectData() {
+  private HashMap<String, ClassInspect> getInspectData() {
     if (inspectData == null) {
       try (InputStream inputStream = inspectDataStream) {
         inspectData = IOUtils.toString(inputStream, "UTF-8");
+        this.inspectDataCache = new SerializeInspect().fromJson(inspectData);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
-    return inspectData;
+    return inspectDataCache;
   }
 
   public static InputStream getInspectFile() {
     String inputFile = "jar:file:" + pathToInspectionFile(BxInspect.class).toString() + "!/" + BEAKERX_INSPECT_JSON;
     try {
+      
+      if(false)
+        return new FileInputStream("/Users/simon.sadedin/work/tools/beakerx-devel/beakerx_kernel_base/base/build/resources/main/beakerx_inspect.json");
+      
       URL inputURL = new URL(inputFile);
       JarURLConnection conn = (JarURLConnection) inputURL.openConnection();
       InputStream in = conn.getInputStream();
@@ -85,6 +95,9 @@ public class BxInspect implements Inspect {
 
   public static Path pathToInspectionFile(Class clazz) {
     Path workingDirectory = null;
+    String predefinedPath = System.getProperty("beakerx.inspect_file_path", null);
+    if(predefinedPath != null)
+      return Paths.get(new File(predefinedPath).toURI());
     try {
       workingDirectory = Paths.get(clazz.getProtectionDomain().getCodeSource().getLocation().toURI());
     } catch (URISyntaxException e) {
@@ -93,8 +106,12 @@ public class BxInspect implements Inspect {
     return workingDirectory;
   }
 
-  private InspectResult getInspectResult(int caretPosition, String methodName, String className, String everything) {
-    HashMap<String, ClassInspect> stringClassInspectHashMap = new SerializeInspect().fromJson(everything);
+  public InspectResult getInspectResult(int caretPosition, String methodName, String className) {
+    return getInspectResult(caretPosition, methodName, className, getInspectData());
+  }
+
+  private InspectResult getInspectResult(int caretPosition, String methodName, String className, HashMap<String,ClassInspect> stringClassInspectHashMap) {
+//    HashMap<String, ClassInspect> stringClassInspectHashMap = new SerializeInspect().fromJson(hashMap);
     InspectResult inspectResult = new InspectResult();
     ClassInspect classInspect = null;
     if (stringClassInspectHashMap.containsKey(className)) {
@@ -131,7 +148,16 @@ public class BxInspect implements Inspect {
             + COLOR_RED + "JavaDoc: " + (classInspect.getJavadoc().equals("")
             ? "<no JavaDoc>" : COLOR_RESET + classInspect.getJavadoc());
   }
-
+  
+  private String formatSignature(final MethodInspect methodData) {
+    if(methodData.getReturnType() != null) {
+      return String.format("(%s) -> %s", methodData.getSignature(), methodData.getReturnType());
+    }
+    else {
+      return "(" + methodData.getSignature() + ")";
+    }
+  }
+  
   public String parseMethodsInfo(List<MethodInspect> methods, String className) {
     if (methods == null) {
       return "";
@@ -139,7 +165,7 @@ public class BxInspect implements Inspect {
     String parsedMethods = methods.stream()
             .map(m ->
                     COLOR_RED + "Signature: " + COLOR_RESET + className + (className.equals("") ? "" : ".")
-                            + m.getMethodName() + "(" + m.getSignature() + ")" + "\n" + COLOR_RED + "JavaDoc: " +
+                            + m.getMethodName() + this.formatSignature(m) + "\n" + COLOR_RED + "JavaDoc: " +
                             (m.getJavadoc().equals("") ? "<no JavaDoc>" : COLOR_RESET + m.getJavadoc()))
             .collect(Collectors.joining("\n\n"));
     return parsedMethods;
