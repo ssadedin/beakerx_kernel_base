@@ -15,6 +15,7 @@
  */
 package com.twosigma.beakerx.kernel.handler;
 
+import com.twosigma.beakerx.NamespaceClient;
 import com.twosigma.beakerx.evaluator.SimpleEvaluationObjectFactory;
 import com.twosigma.beakerx.handler.KernelHandler;
 import com.twosigma.beakerx.jvm.object.EvaluationObject;
@@ -87,6 +88,10 @@ public class ExecuteRequestHandler extends KernelHandler<Message> {
       String codeString = takeCodeFrom(message);
       announceTheCode(message, codeString);
       Code code = new CodeFactory(MessageCreator.get(), seof).create(codeString, message, kernel);
+      
+      NamespaceClient.getBeakerX().setCurrentMessage(message);
+      NamespaceClient.getBeakerX().setExecutionCount(executionCount);
+      
       code.execute(kernel, executionCount);
       kernel.sendIdleMessage(message);
     }

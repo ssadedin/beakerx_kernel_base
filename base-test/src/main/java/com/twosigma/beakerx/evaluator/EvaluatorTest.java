@@ -32,6 +32,8 @@ import com.twosigma.beakerx.kernel.GroupName;
 import com.twosigma.beakerx.kernel.ImportPath;
 import com.twosigma.beakerx.kernel.Imports;
 import com.twosigma.beakerx.kernel.PathToJar;
+import com.twosigma.beakerx.message.Message;
+
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -271,6 +273,13 @@ public class EvaluatorTest extends BaseEvaluator {
 
     public String getLastRunByTag() {
       return lastRunByTag;
+    }
+
+    public void setExecutionCount(int count) {
+    }
+
+    @Override
+    public void setCurrentMessage(Message currentMessage) {
     }
   }
 

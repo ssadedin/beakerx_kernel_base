@@ -16,14 +16,24 @@
 package com.twosigma.beakerx;
 
 import com.twosigma.beakerx.evaluator.InternalVariable;
+import com.twosigma.beakerx.evaluator.SimpleEvaluationObjectFactory;
 import com.twosigma.beakerx.jvm.object.EvaluationObject;
+import com.twosigma.beakerx.kernel.Code;
 import com.twosigma.beakerx.kernel.ConfigurationFile;
+import com.twosigma.beakerx.kernel.KernelFunctionality;
 import com.twosigma.beakerx.kernel.KernelManager;
 import com.twosigma.beakerx.kernel.comm.Buffer;
 import com.twosigma.beakerx.kernel.comm.BxComm;
 import com.twosigma.beakerx.kernel.comm.Comm;
 import com.twosigma.beakerx.kernel.comm.Data;
 import com.twosigma.beakerx.kernel.comm.TargetNamesEnum;
+import com.twosigma.beakerx.kernel.magic.command.CodeFactory;
+import com.twosigma.beakerx.kernel.magic.command.MagicCommand;
+import com.twosigma.beakerx.kernel.magic.command.MagicCommandExecutionParam;
+import com.twosigma.beakerx.kernel.magic.command.MagicCommandType;
+import com.twosigma.beakerx.kernel.magic.command.functionality.kernelMagic.PythonMagicCommand;
+import com.twosigma.beakerx.kernel.msg.MessageCreator;
+import com.twosigma.beakerx.message.Message;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -44,6 +54,8 @@ public class NamespaceClient implements BeakerXClient {
   private BeakerXJsonSerializer beakerXJsonSerializer;
   private CommRepository commRepository;
   private Comm urlArgComm;
+  private Message currentMessage;
+  private int executionCount;
 
   public NamespaceClient(AutotranslationService autotranslationService, BeakerXJsonSerializer beakerXJsonSerializer, CommRepository commRepository) {
     this.autotranslationService = autotranslationService;
@@ -84,6 +96,33 @@ public class NamespaceClient implements BeakerXClient {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+  
+  /**
+   * Run a block of code using the given kernel by name
+   * 
+   * This enables the same functionality as the usual <code>%%kernel</code>
+   * at the top of a cell, but it can be dynamic instead of static,
+   * because the code is passed as a variable.
+   * 
+   * @param kernelName          the name of the kernel, eg: python
+   * @param code                code to run
+   */
+  public void run(String kernelName, String code) {
+    KernelFunctionality kernel = KernelManager.get();
+    final String magicKernelName = "%%" + kernelName;
+    var pythonMagicFunctionality = kernel.getMagicCommandTypes()
+      .stream() 
+      .filter(c -> c.getMagicCommandFunctionality().matchCommand(magicKernelName))
+      .map(MagicCommandType::getMagicCommandFunctionality)
+      .findFirst()
+      .orElseThrow();
+    
+    MagicCommand command = new MagicCommand(pythonMagicFunctionality, magicKernelName, code);
+    
+    var seof = new SimpleEvaluationObjectFactory();
+    Code codeInst = new CodeFactory(MessageCreator.get(), seof).create(magicKernelName + "\n" + code, this.currentMessage, kernel);
+    codeInst.execute(kernel, executionCount);
   }
 
   @Override
@@ -224,5 +263,15 @@ public class NamespaceClient implements BeakerXClient {
       urlArgComm.open();
     }
     return urlArgComm;
+  }
+
+  @Override
+  public void setCurrentMessage(Message currentMessage) {
+    this.currentMessage = currentMessage;
+  }
+
+  @Override
+  public void setExecutionCount(int executionCount) {
+    this.executionCount = executionCount;
   }
 }

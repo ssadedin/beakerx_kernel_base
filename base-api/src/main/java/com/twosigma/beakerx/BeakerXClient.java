@@ -18,6 +18,8 @@ package com.twosigma.beakerx;
 import java.util.List;
 import java.util.concurrent.SynchronousQueue;
 
+import com.twosigma.beakerx.message.Message;
+
 public interface BeakerXClient {
 
   String CODE_CELL_PATH = "codecell";
@@ -43,4 +45,8 @@ public interface BeakerXClient {
   String getContext();
 
   String urlArg(String argName);
+
+  void setCurrentMessage(Message currentMessage);
+
+  void setExecutionCount(int executionCount);
 }
