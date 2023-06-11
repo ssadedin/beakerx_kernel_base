@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.Gson;
 import com.twosigma.beakerx.autocomplete.AutocompleteResult;
 import com.twosigma.beakerx.kernel.KernelFunctionality;
 import com.twosigma.beakerx.message.Header;
@@ -87,6 +88,11 @@ public class CompleteHandler extends KernelHandler<Message> {
 
       metadata.put("_jupyter_types_experimental", types);
       content.put("metadata", metadata);
+
+      // DEBUG:
+      Gson gson = new Gson();
+      System.err.println("Sending metadata: " + gson.toJson(content));
+    }
     reply.setContent(content);
     return reply;
   }
